@@ -4,7 +4,11 @@ import { useState, useEffect } from "react";
 import FoodCard from "./components/FoodCard";
 import AddFoodForm from "./components/AddFoodForm";
 
-const API_BASE_URL =  "http://127.0.0.1:8080/api/food";
+// --- THE FIX IS HERE ---
+// If we are on Vercel, use the legitimate URL. If on laptop, use localhost.
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL 
+  ? `${process.env.NEXT_PUBLIC_API_URL}/api/food`
+  : "http://127.0.0.1:8080/api/food";
 
 export default function Home() {
   const [foods, setFoods] = useState<any[]>([]);
@@ -14,19 +18,15 @@ export default function Home() {
   // --- GET: Fetch all items ---
 const fetchFoods = async () => {
     try {
+      console.log("Fetching from:", API_BASE_URL); // Debug log to see where it's connecting
       const response = await fetch(API_BASE_URL);
       
-      // --- UPDATE THIS SECTION ---
       if (!response.ok) {
-        // This will print "Server Error: 500 Internal Server Error" to your console
         console.error(`Server Error: ${response.status} ${response.statusText}`);
-        // If the server sent a text message, try to read it
         const text = await response.text();
         console.error("Server Response Body:", text);
-        
         throw new Error(`Backend failed with status: ${response.status}`);
       }
-      // ----------------------------
 
       const data = await response.json();
       setFoods(data);
@@ -42,7 +42,6 @@ const fetchFoods = async () => {
   }, []);
 
   // --- POST: Add food item ---
-  // API: /api/food/{itemName}
   const handleAddFood = async (name: string, quantity: number) => {
     try {
       const response = await fetch(`${API_BASE_URL}`, {
@@ -51,7 +50,7 @@ const fetchFoods = async () => {
         body: JSON.stringify({ itemName: name, quantity: quantity })
       });
       if (response.ok) {
-        await fetchFoods(); // Refresh list after success
+        await fetchFoods(); 
         setIsModalOpen(false);
       }
     } catch (error) {
@@ -60,7 +59,6 @@ const fetchFoods = async () => {
   };
 
   // --- DELETE: Remove item ---
-  // API: /api/food/{itemName}
   const handleDeleteFood = async (name: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/${encodeURIComponent(name)}`, {
@@ -73,7 +71,6 @@ const fetchFoods = async () => {
   };
 
   // --- PUT: Update count ---
-  // API: /api/food/{itemName}?action=(increase/decrease)
   const handleUpdateQuantity = async (name: string, action: "increase" | "decrease") => {
     try {
       const response = await fetch(`${API_BASE_URL}/${encodeURIComponent(name)}?action=${action}`, {
